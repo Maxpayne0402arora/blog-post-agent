@@ -5,6 +5,12 @@ from google.adk.cli.fast_api import get_fast_api_app
 # Port is dynamically assigned by the hosting provider (e.g., Render)
 port = int(os.environ.get("PORT", 8000))
 
+# Diagnostic check for API key
+if "GEMINI_API_KEY" in os.environ:
+    print("ADK Launch: GEMINI_API_KEY is successfully detected in the environment.")
+else:
+    print("ADK Launch WARNING: GEMINI_API_KEY is NOT detected in the environment!")
+
 # Initialize the FastAPI app with the relative path to our agents directory
 app = get_fast_api_app(
     agents_dir="agents",
