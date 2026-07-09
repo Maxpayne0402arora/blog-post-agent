@@ -89,8 +89,16 @@ robust_blog_writer = LoopAgent(
 )
 
 # Expose planner/writer as tools so the root agent can call them explicitly
-planner_tool = agent_tool.AgentTool(agent=robust_blog_planner)
-writer_tool  = agent_tool.AgentTool(agent=robust_blog_writer)
+# OPTIMIZATION: To run 3x-5x faster and avoid 429 rate limits on the Free Tier,
+# we call the agents directly instead of wrapping them in LoopAgents.
+#
+# FUTURE ENTERPRISE KEY UPGRADE:
+# If you upgrade to an enterprise/paid Gemini API key in the future, you can swap these
+# back to use the validation loop agents:
+#   planner_tool = agent_tool.AgentTool(agent=robust_blog_planner)
+#   writer_tool  = agent_tool.AgentTool(agent=robust_blog_writer)
+planner_tool = agent_tool.AgentTool(agent=blog_planner)
+writer_tool  = agent_tool.AgentTool(agent=blog_writer)
 
 # ── Root Agent: Plan → Write ────────────────────────────────────────────────
 root_agent = Agent(
