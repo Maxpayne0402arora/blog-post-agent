@@ -18,15 +18,30 @@ async def patched_generate_content_async(self, llm_request, stream=False):
             async for response in original_generate_content_async(self, llm_request, stream):
                 yield response
             break
-        except ClientError as e:
-            if e.code == 429 and attempts < 5:
+        except Exception as e:
+            is_rate_limit = False
+            
+            # Check for standard ClientError 429
+            if isinstance(e, ClientError) and e.code == 429:
+                is_rate_limit = True
+            # Check for API core ResourceExhausted or similar class names
+            elif "ResourceExhausted" in e.__class__.__name__:
+                is_rate_limit = True
+            # Check for status codes
+            elif getattr(e, "code", None) == 429 or getattr(e, "status_code", None) == 429:
+                is_rate_limit = True
+            # Check the error message string
+            elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                is_rate_limit = True
+
+            if is_rate_limit and attempts < 10:
                 attempts += 1
                 delay = 30
-                # Parse wait time from error message (e.g. "retry in 15.7s")
+                # Parse wait time from error message (e.g. "retry in 15s")
                 match = re.search(r"retry in ([\d\.]+)s", str(e))
                 if match:
                     delay = int(float(match.group(1))) + 2
-                print(f"[Rate Limiter] Gemini API 429 Rate Limit hit. Retrying in {delay}s (Attempt {attempts}/5)...")
+                print(f"[Rate Limiter] Gemini API 429 / ResourceExhausted hit. Retrying in {delay}s (Attempt {attempts}/10)...")
                 await asyncio.sleep(delay)
             else:
                 raise e
